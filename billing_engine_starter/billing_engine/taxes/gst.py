@@ -18,16 +18,34 @@ from billing_engine.taxes.base import TaxCalculator, TaxContext, TaxBreakdown
 
 class GSTCalculator(TaxCalculator):
     def __init__(self, cgst: Decimal, sgst: Decimal, igst: Decimal) -> None:
-        # TODO Day 1
-        #   - Validate each rate is Decimal in [0, 1].
-        #   - Validate cgst + sgst == igst (sanity check on Indian GST setup).
-        #   - Store on self.
-        raise NotImplementedError("Day 1: implement GSTCalculator.__init__")
+        if cgst + sgst != igst:
+         raise ValueError("cgst + sgst must equal igst")
+
+        self.cgst = cgst
+        self.sgst = sgst
+        self.igst = igst
 
     def apply(self, taxable: Money, context: TaxContext) -> TaxBreakdown:
-        # TODO Day 1
-        #   - Decide intra vs inter-state from context.
-        #     intra = bool(context.customer_state) and context.customer_state == context.seller_state
-        #   - If intra: components = [("CGST X%", taxable*cgst), ("SGST Y%", taxable*sgst)], total = sum
-        #   - Else:     components = [("IGST Z%", taxable*igst)],                            total = igst leg
-        raise NotImplementedError("Day 1: implement GSTCalculator.apply")
+        intra = bool(context.customer_state) and (
+        context.customer_state == context.seller_state
+    )
+        if intra:
+            cgst_tax = taxable * self.cgst
+            sgst_tax = taxable * self.sgst
+
+            return TaxBreakdown(
+            [
+                ("CGST", cgst_tax),
+                ("SGST", sgst_tax),
+            ],
+            cgst_tax + sgst_tax,
+        )
+
+        igst_tax = taxable * self.igst
+
+        return TaxBreakdown(
+            [("IGST", igst_tax)],
+            igst_tax,
+    )
+
+     
